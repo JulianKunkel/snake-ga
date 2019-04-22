@@ -8,7 +8,7 @@ import seaborn as sns
 import numpy as np
 
 # Set options to activate or deactivate the game view, and its speed
-display_option = False
+display_option = True
 speed = 0
 pygame.font.init()
 
@@ -45,7 +45,7 @@ class Player(object):
     def update_position(self, x, y):
         if self.position[-1][0] != x or self.position[-1][1] != y:
             if self.food > 1:
-                for i in range(0, self.food - 1):
+                for i in range(0, min(self.food - 1, 20)):
                     self.position[i][0], self.position[i][1] = self.position[i + 1]
             self.position[-1][0] = x
             self.position[-1][1] = y
@@ -54,7 +54,6 @@ class Player(object):
         move_array = [self.x_change, self.y_change]
 
         if self.eaten:
-
             self.position.append([self.x, self.y])
             self.eaten = False
             self.food = self.food + 1
@@ -72,7 +71,7 @@ class Player(object):
         self.x = x + self.x_change
         self.y = y + self.y_change
 
-        if self.x < 20 or self.x > game.game_width-40 or self.y < 20 or self.y > game.game_height-40 or [self.x, self.y] in self.position:
+        if self.x < 20 or self.x > game.game_width-40 or self.y < 20 or self.y > game.game_height-40: #or [self.x, self.y] in self.position:
             game.crash = True
         eat(self, food, game)
 
@@ -83,7 +82,7 @@ class Player(object):
         self.position[-1][1] = y
 
         if game.crash == False:
-            for i in range(food):
+            for i in range(min(self.food, 21)):
                 x_temp, y_temp = self.position[len(self.position) - 1 - i]
                 game.gameDisplay.blit(self.image, (x_temp, y_temp))
 
@@ -158,7 +157,7 @@ def initialize_game(player, game, food, agent):
     action = [1, 0, 0]
     player.do_move(action, player.x, player.y, game, food, agent)
     state_init2 = agent.get_state(game, player, food)
-    reward1 = agent.set_reward(player, game.crash)
+    reward1 = agent.set_reward(player, game.crash, food)
     agent.remember(state_init1, action, reward1, state_init2, game.crash)
     agent.replay_new(agent.memory)
 
@@ -190,10 +189,10 @@ def run():
         while not game.crash:
             #agent.epsilon is set to give randomness to actions
             agent.epsilon = 80 - counter_games
-            
+
             #get old state
             state_old = agent.get_state(game, player1, food1)
-            
+
             #perform random actions based on agent.epsilon, or choose the action
             if randint(0, 200) < agent.epsilon:
                 final_move = to_categorical(randint(0, 2), num_classes=3)
@@ -201,24 +200,24 @@ def run():
                 # predict action based on the old state
                 prediction = agent.model.predict(state_old.reshape((1,11)))
                 final_move = to_categorical(np.argmax(prediction[0]), num_classes=3)
-                
+
             #perform new move and get new state
             player1.do_move(final_move, player1.x, player1.y, game, food1, agent)
             state_new = agent.get_state(game, player1, food1)
-            
+
             #set treward for the new state
-            reward = agent.set_reward(player1, game.crash)
-            
+            reward = agent.set_reward(player1, game.crash, food1)
+
             #train short memory base on the new action and state
             agent.train_short_memory(state_old, final_move, reward, state_new, game.crash)
-            
+
             # store the new data into a long term memory
             agent.remember(state_old, final_move, reward, state_new, game.crash)
             record = get_record(game.score, record)
             if display_option:
                 display(player1, food1, game, record)
                 pygame.time.wait(speed)
-        
+
         agent.replay_new(agent.memory)
         counter_games += 1
         print('Game', counter_games, '      Score:', game.score)

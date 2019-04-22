@@ -22,6 +22,7 @@ class DQNAgent(object):
         self.epsilon = 0
         self.actual = []
         self.memory = []
+        self.oldFood = None
 
     def get_state(self, game, player, food):
 
@@ -65,29 +66,42 @@ class DQNAgent(object):
 
         return np.asarray(state)
 
-    def set_reward(self, player, crash):
+    def set_reward(self, player, crash, food):
         self.reward = 0
         if crash:
             self.reward = -10
             return self.reward
         if player.eaten:
-            self.reward = 10
+            self.reward = 100
+        else:
+          if food != self.oldFood:
+            self.oldFood = food
+            self.distance = 0
+          else:
+            distance = (abs(food.x_food - player.x) + abs(food.y_food - player.y)) / 20
+            if distance < self.distance:
+              self.reward = 20
+            else:
+              self.reward = -5
+            self.distance = distance
+
         return self.reward
 
     def network(self, weights=None):
         model = Sequential()
-        model.add(Dense(output_dim=120, activation='relu', input_dim=11))
+        model.add(Dense(units=120, activation='relu', input_dim=11))
         model.add(Dropout(0.15))
-        model.add(Dense(output_dim=120, activation='relu'))
+        model.add(Dense(units=120, activation='relu'))
         model.add(Dropout(0.15))
-        model.add(Dense(output_dim=120, activation='relu'))
+        model.add(Dense(units=120, activation='relu'))
         model.add(Dropout(0.15))
-        model.add(Dense(output_dim=3, activation='softmax'))
+        model.add(Dense(units=3, activation='softmax'))
         opt = Adam(self.learning_rate)
         model.compile(loss='mse', optimizer=opt)
 
         if weights:
             model.load_weights(weights)
+
         return model
 
     def remember(self, state, action, reward, next_state, done):
