@@ -45,7 +45,7 @@ class Player(object):
     def update_position(self, x, y):
         if self.position[-1][0] != x or self.position[-1][1] != y:
             if self.food > 1:
-                for i in range(0, min(self.food - 1, 20)):
+                for i in range(len(self.position) - 1):
                     self.position[i][0], self.position[i][1] = self.position[i + 1]
             self.position[-1][0] = x
             self.position[-1][1] = y
@@ -54,7 +54,8 @@ class Player(object):
         move_array = [self.x_change, self.y_change]
 
         if self.eaten:
-            self.position.append([self.x, self.y])
+            if len(self.position) < 20:
+              self.position.append([self.x, self.y])
             self.eaten = False
             self.food = self.food + 1
         if np.array_equal(move ,[1, 0, 0]):
@@ -71,7 +72,7 @@ class Player(object):
         self.x = x + self.x_change
         self.y = y + self.y_change
 
-        if self.x < 20 or self.x > game.game_width-40 or self.y < 20 or self.y > game.game_height-40: #or [self.x, self.y] in self.position:
+        if self.x < 20 or self.x > game.game_width-40 or self.y < 20 or self.y > game.game_height - 40 or [self.x, self.y] in self.position:
             game.crash = True
         eat(self, food, game)
 
@@ -82,13 +83,13 @@ class Player(object):
         self.position[-1][1] = y
 
         if game.crash == False:
-            for i in range(min(self.food, 21)):
-                x_temp, y_temp = self.position[len(self.position) - 1 - i]
+            for i in range(len(self.position)):
+                x_temp, y_temp = self.position[i]
                 game.gameDisplay.blit(self.image, (x_temp, y_temp))
 
             update_screen()
-        else:
-            pygame.time.wait(300)
+        #else:
+            #pygame.time.wait(300)
 
 
 class Food(object):

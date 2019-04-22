@@ -80,7 +80,7 @@ class DQNAgent(object):
           else:
             distance = (abs(food.x_food - player.x) + abs(food.y_food - player.y)) / 20
             if distance < self.distance:
-              self.reward = 20
+              self.reward = max(20 - distance, 0)
             else:
               self.reward = -5
             self.distance = distance
